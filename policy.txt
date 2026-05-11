@@ -1,0 +1,5 @@
+STORE POLICY:
+- Returns allowed within 30 days.
+- Items must have original tags and be unwashed.
+- Final sale items cannot be returned.
+- Customer pays return shipping unless the item is damaged.
