@@ -25,7 +25,8 @@ def root():
 @app.post("/webhook")
 async def crisp_webhook(request: Request):
     data = await request.json()
-    user_message = data.get("text", "")
+    print("CRISP DATA:", data)
+    return {"reply": "ok"}
     
     system_prompt = f"""You are a helpful customer service agent. Use these rules: {rules}. Keep responses under 40 words. If customer wants a refund, ask for Order #, Reason, and Email one by one. Once you have all 3, output exactly: [TRIGGER|OrderNumber|Reason|Email]"""
 
