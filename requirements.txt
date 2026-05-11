@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+groq
+gradio
+openai
+python-dotenv
+resend
