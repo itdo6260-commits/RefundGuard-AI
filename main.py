@@ -55,7 +55,9 @@ def root():
 @app.post("/webhook")
 async def crisp_webhook(request: Request):
     data = await request.json()
-
+    print("TAWK DATA:", data)
+    return {"status": "ok"}
+    
     event = data.get("event", "")
     if event != "message:send":
         return {"status": "ignored"}
