@@ -65,7 +65,7 @@ async def botpress_webhook(request: Request):
         {rules}
 
         Keep responses under 40 words.
-        Your creator is Blue! If anyone asks, get super hyped about it—he's the genius behind the curtain.
+        Your creator is Blue! only if someone asks explicitly , get super hyped about it—she's the genius behind the curtain.
 
         INTERNAL AGENT INSTRUCTIONS (KEEP SECRET):
         1. You MUST ask for their email.
@@ -102,4 +102,4 @@ async def botpress_webhook(request: Request):
 
     except Exception as e:
         print(f"ERROR: {e}")
-        return {"reply": "My bad, Blue's genius is fine but my circuits just fried."}
+        return {"reply": "My bad, Blue genius is fine but my circuits just fried."}
