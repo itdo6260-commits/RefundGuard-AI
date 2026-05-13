@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 from openai import OpenAI
 
 app = FastAPI()
-
+conversation_memory = {}
 api_key = os.getenv("GROQ_API_KEY") or ""
 resend.api_key = os.getenv("RESEND_API_KEY") or ""
 GMAIL_USER = os.getenv("GMAIL_USER") or ""
@@ -39,7 +39,8 @@ async def botpress_webhook(request: Request):
     try:
         data = await request.json()
         user_message = data.get("message", "")
-
+        session_id = data.get("session_id", "default")
+        
         # --- PAUL (The Professional) ---
         # system_prompt = f"""You are Paul. You are professional, polite, and an absolute helpful customer service agent. Use politeness and respect.
 
@@ -76,11 +77,10 @@ async def botpress_webhook(request: Request):
 
         Remember: Stay focused on helping, but keep the savage/funny vibe constant."""
 
-        history = data.get("history", [])
+        history = conversation_memory.get(session_id, [])
+        history.append({"role": "user", "content": user_message})
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(history)
-        messages.append({"role": "user", "content": user_message})
-
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
@@ -88,6 +88,8 @@ async def botpress_webhook(request: Request):
         )
 
         ai_reply = response.choices[0].message.content
+        history.append({"role": "assistant", "content": ai_reply})
+        conversation_memory[session_id] = history
 
         if "[TRIGGER|" in ai_reply:
             match = re.search(r'\[TRIGGER\|(.*?)\|(.*?)\|(.*?)\]', ai_reply)
