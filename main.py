@@ -23,7 +23,7 @@ def send_refund_email(order_id, reason, customer_email):
     try:
         resend.Emails.send({
             "from": "onboarding@resend.dev",
-            "to": [GMAIL_USER, customer_email],
+            "to": [GMAIL_USER],
             "subject": f"New Refund Request - Order {order_id}",
             "html": f"<p><b>Order #:</b> {order_id}<br><b>Reason:</b> {reason}<br><b>Customer Email:</b> {customer_email}</p>"
         })
