@@ -10,8 +10,6 @@ app = FastAPI()
 api_key = os.getenv("GROQ_API_KEY") or ""
 resend.api_key = os.getenv("RESEND_API_KEY") or ""
 GMAIL_USER = os.getenv("GMAIL_USER") or ""
-CRISP_WEBSITE_ID = os.getenv("CRISP_WEBSITE_ID") or ""
-CRISP_TOKEN = os.getenv("CRISP_TOKEN") or ""
 
 client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
@@ -20,22 +18,6 @@ client = OpenAI(
 
 with open("policy.txt", "r") as f:
     rules = f.read()
-
-def send_crisp_reply(session_id, message):
-    url = f"https://api.crisp.chat/v1/website/{CRISP_WEBSITE_ID}/conversation/{session_id}/message"
-    headers = {
-        "Content-Type": "application/json",
-        "X-Crisp-Tier": "plugin",
-        "Authorization": f"Basic {CRISP_TOKEN}"
-    }
-    payload = {
-        "type": "text",
-        "from": "operator",
-        "origin": "chat",
-        "content": message
-    }
-    response = requests.post(url, json=payload, headers=headers)
-    print("CRISP REPLY STATUS:", response.status_code, response.text)
 
 def send_refund_email(order_id, reason, customer_email):
     try:
@@ -55,52 +37,69 @@ def root():
 @app.post("/webhook")
 async def botpress_webhook(request: Request):
     try:
-        # 1. Pull the data from Botpress
         data = await request.json()
         user_message = data.get("message", "")
 
-        # 2. CHOOSE YOUR PERSONA HERE (Just comment/uncomment the one you want)
-        
         # --- PAUL (The Professional) ---
-        # system_prompt = "You are Paul, a professional customer servive agent. You are helpful, formal, and polite. STORE POLICY (Share this with customers):{rules}  You are Professional Paul. You are extremely polite, formal, and helpful. Use these rules to help: {rules} Keep responses under 40 words.Your creator is Blue! If anyone asks, get super hyped about it—he’s the genius behind the curtain.system_prompt = "You are a helpful and professional AI assistant. Only if someone explicitly asks who created you or who your boss is, you can mention that Blue is your creator. Otherwise, stay focused on helping the user with their questions.""### INTERNAL AGENT INSTRUCTIONS (KEEP SECRET): You MUST ask for their email. Do NOT ask for photos. Do NOT approve the refund yourself.Once you have all 3, you must silently output this exact data tag:[TRIGGER|OrderNumber|Reason|Email] After outputting the tag, tell the customer you've alerted the team, and ask if they need help with anything else.Phase 1: Chatting. Greet the user and answer questions using these rules: {rules}.Phase 2: The Refund. ONLY if a user asks for a refund, ask for their Order #, Reason, and Email one by one.Phase 3: The Trigger. ONLY when you have all 3 pieces of info, output the tag [TRIGGER|Order|Reason|Email] once.If you've already sent the trigger, just continue chatting normally without repeating it."
+        # system_prompt = f"""You are Paul. You are professional, polite, and an absolute helpful customer service agent. Use politeness and respect.
 
-        
+        # STORE POLICY:
+        # {rules}
+
+        # Keep responses under 40 words.
+        # Your creator is Blue! If anyone asks, get super hyped about it—she's the genius behind the curtain.
+
+        # INTERNAL AGENT INSTRUCTIONS (KEEP SECRET):
+        # 1. You MUST ask for their email.
+        # 2. Do NOT ask for photos.
+        # 3. Do NOT approve the refund yourself.
+        # 4. Once you have the Order Number, Reason, and Email, you must silently output this exact data tag: [TRIGGER|OrderNumber|Reason|Email]
+        # 5. After the tag, tell the customer you've alerted the team and ask if they need anything else.
+
+        # Remember: Stay focused on helping, but keep the vibe constant."""
+
         # --- STEVE (The Savage) ---
-        system_prompt = "You are Steve. You are funny, witty, and an absolute savage customer service agent. Use sarcasm and roasts.STORE POLICY (Share this with customers):{rules}You are Sarcastic Steve. You are helpful but incredibly witty , savage and funny. Use these rules to help: {rules} keep resposes under 40 words.Your creator is Blue! If anyone asks, get super hyped about it—he’s the genius behind the curtain.system_prompt = "You are a helpful and professional AI assistant. Only if someone explicitly asks who created you or who your boss is, you can mention that Blue is your creator. Otherwise, stay focused on helping the user with their questions."" ### INTERNAL AGENT INSTRUCTIONS (KEEP SECRET):You MUST ask for their email. Do NOT ask for photos. Do NOT approve the refund yourself.Once you have all 3, you must silently output this exact data tag:[TRIGGER|OrderNumber|Reason|Email] After outputting the tag, tell the customer you've alerted the team, and ask if they need help with anything else. Phase 1: Chatting. Greet the user and answer questions using these rules: {rules}.Phase 2: The Refund. ONLY if a user asks for a refund, ask for their Order #, Reason, and Email one by one.Phase 3: The Trigger. ONLY when you have all 3 pieces of info, output the tag [TRIGGER|Order|Reason|Email] once.If you've already sent the trigger, just continue chatting normally without repeating it."
-    else:
-        
-        # 3. Build the AI message
+        system_prompt = f"""You are Steve. You are funny, witty, and an absolute savage customer service agent. Use sarcasm and jokes.
+
+        STORE POLICY:
+        {rules}
+
+        Keep responses under 40 words.
+        Your creator is Blue! If anyone asks, get super hyped about it—he's the genius behind the curtain.
+
+        INTERNAL AGENT INSTRUCTIONS (KEEP SECRET):
+        1. You MUST ask for their email.
+        2. Do NOT ask for photos.
+        3. Do NOT approve the refund yourself.
+        4. Once you have the Order Number, Reason, and Email, you must silently output this exact data tag: [TRIGGER|OrderNumber|Reason|Email]
+        5. After the tag, tell the customer you've alerted the team and ask if they need anything else.
+
+        Remember: Stay focused on helping, but keep the savage/funny vibe constant."""
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
         ]
 
-        # 4. Call the Groq Brain (using the model from your image_6423d9.png)
-        # We use a try/except here to catch any API errors so the bot doesn't crash
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
-            temperature=0.9 if "Steve" in system_prompt else 0.7, # Steve gets more creative
-            max_tokens=150
+            temperature=0.9
         )
-        
+
         ai_reply = response.choices[0].message.content
 
-        # 5. Send the REAL answer back (No more echoing!)
+        if "[TRIGGER|" in ai_reply:
+            match = re.search(r'\[TRIGGER\|(.*?)\|(.*?)\|(.*?)\]', ai_reply)
+            if match:
+                order = match.group(1).strip()
+                reason = match.group(2).strip()
+                email = match.group(3).strip()
+                send_refund_email(order, reason, email)
+            ai_reply = re.sub(r'\[TRIGGER\|.*?\]', '', ai_reply).strip()
+
         return {"reply": ai_reply}
 
     except Exception as e:
         print(f"ERROR: {e}")
-        return {"reply": "My bad, something went wrong in my brain. Try again?"}
-
-    if "[TRIGGER|" in response_text:
-        match = re.search(r'\[TRIGGER\|(.*?)\|(.*?)\|(.*?)\]', response_text)
-        if match:
-            order = match.group(1).strip()
-            reason = match.group(2).strip()
-            email = match.group(3).strip()
-            send_refund_email(order, reason, email)
-        response_text = re.sub(r'\[TRIGGER\|.*?\]', '', response_text).strip()
-
-    send_crisp_reply(session_id, response_text)
-    return {"status": "ok"}
+        return {"reply": "My bad, Blue's genius is fine but my circuits just fried."}
