@@ -54,50 +54,42 @@ def root():
 
 @app.post("/webhook")
 async def botpress_webhook(request: Request):
-    # 1. Get the data Botpress sends
-    data = await request.json()
-    
-    # 2. Extract the user's question
-    user_message = data.get("message", "")
-    
-    # 3. Create a test reply (You will connect your Groq agent here later)
-    reply_text = f"Railway connection successful! You said: {user_message}"
-    
-    # 4. Send the reply back to Botpress in the exact format it expects
-    return {"reply": reply_text}
-    
-    event = data.get("event", "")
-    if event != "message:send":
-        return {"status": "ignored"}
+    try:
+        # 1. Pull the data from Botpress
+        data = await request.json()
+        user_message = data.get("message", "")
 
-    message_data = data.get("data", {})
-    if message_data.get("from") != "user":
-        return {"status": "ignored"}
+        # 2. CHOOSE YOUR PERSONA HERE (Just comment/uncomment the one you want)
+        
+        # --- PAUL (The Professional) ---
+        # system_prompt = "You are Paul, a professional customer servive agent. You are helpful, formal, and polite."
+        
+        # --- STEVE (The Savage) ---
+        system_prompt = "You are Steve. You are funny, witty, and an absolute savage customer service agent. Use sarcasm and roasts."
+        
+        # 3. Build the AI message
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_message}
+        ]
 
-    user_message = message_data.get("content", "")
-    session_id = message_data.get("session_id", "")
+        # 4. Call the Groq Brain (using the model from your image_6423d9.png)
+        # We use a try/except here to catch any API errors so the bot doesn't crash
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            temperature=0.9 if "Steve" in system_prompt else 0.7, # Steve gets more creative
+            max_tokens=150
+        )
+        
+        ai_reply = response.choices[0].message.content
 
-    if not user_message or not session_id:
-        return {"status": "ignored"}
+        # 5. Send the REAL answer back (No more echoing!)
+        return {"reply": ai_reply}
 
-    system_prompt = f"""You are a helpful customer service agent. Use these rules: {rules}. Keep responses under 40 words. If customer wants a refund, ask for Order #, Reason, and Email one by one. Once you have all 3, output exactly: [TRIGGER|OrderNumber|Reason|Email]"""
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_message}
-    ]
-
-    if not client:
-        send_crisp_reply(session_id, "Sorry, I am unavailable right now.")
-        return {"status": "no client"}
-
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=messages,
-        temperature=0.7
-    )
-
-    response_text = response.choices[0].message.content
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return {"reply": "My bad, something went wrong in my brain. Try again?"}
 
     if "[TRIGGER|" in response_text:
         match = re.search(r'\[TRIGGER\|(.*?)\|(.*?)\|(.*?)\]', response_text)
