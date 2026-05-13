@@ -88,6 +88,7 @@ async def botpress_webhook(request: Request):
         )
 
         ai_reply = response.choices[0].message.content
+        print("AI REPLY:", ai_reply)
         history.append({"role": "assistant", "content": ai_reply})
         conversation_memory[session_id] = history
 
