@@ -76,10 +76,9 @@ async def botpress_webhook(request: Request):
 
         Remember: Stay focused on helping, but keep the savage/funny vibe constant."""
 
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message}
-        ]
+        history = data.get("history", [])
+messages = [{"role": "system", "content": system_prompt}]
+messages.extend(history)
 
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
