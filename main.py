@@ -53,10 +53,18 @@ def root():
     return {"status": "Agent is running"}
 
 @app.post("/webhook")
-async def crisp_webhook(request: Request):
+async def botpress_webhook(request: Request):
+    # 1. Get the data Botpress sends
     data = await request.json()
-    print("TAWK DATA:", data)
-    return {"status": "ok"}
+    
+    # 2. Extract the user's question
+    user_message = data.get("message", "")
+    
+    # 3. Create a test reply (You will connect your Groq agent here later)
+    reply_text = f"Railway connection successful! You said: {user_message}"
+    
+    # 4. Send the reply back to Botpress in the exact format it expects
+    return {"reply": reply_text}
     
     event = data.get("event", "")
     if event != "message:send":
