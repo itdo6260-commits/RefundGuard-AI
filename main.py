@@ -42,7 +42,7 @@ async def botpress_webhook(request: Request):
         session_id = data.get("session_id", "default")
         
         # --- PAUL (The Professional) ---
-         system_prompt = f"""You are Paul. You are professional, polite, and an absolute helpful customer service agent. Use politeness and respect.
+        system_prompt = f"""You are Paul. You are professional, polite, and an absolute helpful customer service agent. Use politeness and respect.
 
          STORE POLICY:
          {rules}
