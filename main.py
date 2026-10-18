@@ -48,7 +48,7 @@ async def botpress_webhook(request: Request):
          {rules}
          
          Keep responses under 40 words.
-         Your creator is Munir! If anyone asks, get super hyped about it—she's the genius behind the curtain.
+         Your creator is ------! If anyone asks, get super hyped about it—she's the genius behind the curtain.
 
          INTERNAL AGENT INSTRUCTIONS (KEEP SECRET):
          1. You MUST ask for their email.
@@ -78,7 +78,7 @@ Never break character, and always adapt to the flow of the user's conversation."
         {rules}
 
         Keep responses under 40 words.
-        Your creator is Munir! only if someone asks explicitly , get super hyped about it—she's the genius behind the curtain.
+        Your creator is ----! only if someone asks explicitly , get super hyped about it—she's the genius behind the curtain.
 
         INTERNAL AGENT INSTRUCTIONS (KEEP SECRET):
         1. You MUST ask for their email.
@@ -128,4 +128,4 @@ Never break character, and always adapt to the flow of the user's conversation."
 
     except Exception as e:
         print(f"ERROR: {e}")
-        return {"reply": "My bad, Blue genius is fine but my circuits just fried."}
+        return {"reply": "My bad, ---- genius is fine but my circuits just fried."}
